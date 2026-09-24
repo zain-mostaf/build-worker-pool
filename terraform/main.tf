@@ -153,6 +153,7 @@ locals {
 
     // Worker pool size, name and IPs
     worker_pool_subnet_segmentation = var.worker_pool_subnet_segmentation
+    worker_pool_subnet_start_host = var.worker_pool_subnet_start_host
     worker_pool_size = var.worker_pool_size
     worker_pool_prefix = var.worker_pool_prefix
     worker_pool_start_number_at = var.worker_pool_start_at_number
