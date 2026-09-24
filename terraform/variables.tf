@@ -23,6 +23,17 @@ variable worker_pool_subnet_segmentation {
     description = "List of CIDRs to be used for worker IP assignment. It will limit the number of available spots for this worker pool."
 }
 
+variable worker_pool_subnet_start_host {
+    type = number
+    default = 64
+    description = "Host offset at which worker IP allocation starts within each subnet. For example, 64 allocates 10.136.64.64 first from 10.136.64.0/22."
+
+    validation {
+        condition = var.worker_pool_subnet_start_host >= 0
+        error_message = "worker_pool_subnet_start_host must be zero or greater."
+    }
+}
+
 variable worker_pool_size {
     type=number
     description="Quantity of workers to be provisioned into this worker pool. Maximum allowed is 512 workers."
