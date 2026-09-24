@@ -55,8 +55,14 @@ variable worker_pool_os {
 }
 
 variable worker_pool_prefix {
-    default=""
+    type = string
+    default = ""
     description="(Optional) Worker pool prefix to be added after cluster prefix (cluster prefix is captured from HPC management workspace). If informed, workers will be named by the following convention: <cluster_prefix>-<worker_prefix>-<counter>. If omitted, worker will follow the same naming convention from HPC management workspace (<cluster_prefix>-<(worker/wk)>-<counter>.)"
+
+    validation {
+        condition = var.worker_pool_prefix == "" || can(regex("^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$", var.worker_pool_prefix))
+        error_message = "worker_pool_prefix must contain only letters, numbers, and single hyphens, for example wf-worker."
+    }
 }
 variable worker_pool_start_at_number {
     type=number
