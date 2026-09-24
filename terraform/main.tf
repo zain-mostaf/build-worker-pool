@@ -110,9 +110,36 @@ locals {
     */
     workload_vpc_id = local.output.workload_vpc_id
     resource_group_id = local.output.resource_group_id
-    private_dns_instance_id = local.output.private_dns_instance_id
-    private_dns_zone_id = local.output.private_dns_zone_id
+    private_dns_instance_id = try(
+        local.output.private_dns_instance_id,
+        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "private_dns_instance_id"][0], "")
+    )
+    private_dns_zone_id = try(
+        local.output.private_dns_zone_id,
+        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "private_dns_zone_id"][0], "")
+    )
+    private_dns_reverse_zone_id = var.private_dns_reverse_zone_id != "" ? var.private_dns_reverse_zone_id : try(
+        local.output.private_dns_reverse_zone_id,
+        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "private_dns_reverse_zone_id"][0], "")
+    )
     ssh_key_ids = try(jsondecode(local.output.ssh_key_ids), [])
+
+    vni_enabled = try(tobool(local.output.vni_enabled), try(
+        tobool([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_enabled"][0]),
+        var.vni_enabled
+    ))
+    vni_name = try(
+        local.output.vni_name,
+        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_name"][0], var.vni_name)
+    )
+    vni_subnet_id_or_name = try(
+        local.output.vni_subnet_id_or_name,
+        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_subnet_id_or_name"][0], var.vni_subnet_id_or_name)
+    )
+    vni_security_group_ids = try(
+        jsondecode(local.output.vni_security_group_ids),
+        try(jsondecode([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_security_group_ids"][0]), var.vni_security_group_ids)
+    )
 
     /*
     *  Output that can be overwritten by this workspace
@@ -171,7 +198,7 @@ module dns_records {
     ibmcloud_api_key = var.ibmcloud_api_key
     private_dns_instance_id = local.private_dns_instance_id
     private_dns_zone_id = local.private_dns_zone_id
-    private_dns_reverse_zone_id = var.private_dns_reverse_zone_id != "" ? var.private_dns_reverse_zone_id : try(local.output.private_dns_reverse_zone_id, "")
+    private_dns_reverse_zone_id = local.private_dns_reverse_zone_id
     machine_ip_name_mapping = local.worker_pool_ip_name_mapping
 }
 
@@ -216,10 +243,10 @@ module shared_workers {
     ssh_keys = local.ssh_key_ids
     cloud_init_script = module.cloud_init_scripts.cloud_init_output
     vpc_id = local.workload_vpc_id
-    vni_enabled = var.vni_enabled
-    vni_name = var.vni_name
-    vni_subnet_id_or_name = var.vni_subnet_id_or_name
-    vni_security_group_ids = var.vni_security_group_ids
+    vni_enabled = local.vni_enabled
+    vni_name = local.vni_name
+    vni_subnet_id_or_name = local.vni_subnet_id_or_name
+    vni_security_group_ids = local.vni_security_group_ids
 }
 // Create dedicated workers
 
