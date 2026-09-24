@@ -108,8 +108,16 @@ locals {
     /*
     *  Output variables coming from HPC Management Schematics workspace (requires commit 7f45c3fa7c0d85e3bb02ccb2afeb8b5fd178046b in citi-hpc-offering to work)
     */
-    workload_vpc_id = local.output.workload_vpc_id
-    resource_group_id = local.output.resource_group_id
+    workload_vpc_name = try(
+        local.output.vpc_name,
+        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vpc_name"][0], "")
+    )
+    resource_group_name = try(
+        local.output.resource_group_name,
+        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "resource_group_name"][0], "")
+    )
+    workload_vpc_id = try(local.output.workload_vpc_id, try(data.ibm_is_vpc.workload_vpc[0].id, ""))
+    resource_group_id = try(local.output.resource_group_id, try(data.ibm_resource_group.worker_resource_group[0].id, ""))
     private_dns_instance_id = try(
         local.output.private_dns_instance_id,
         try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "private_dns_instance_id"][0], "")
@@ -144,7 +152,7 @@ locals {
     /*
     *  Output that can be overwritten by this workspace
     */
-    symphony_subnet_id = var.symphony_subnet_id != "" ? var.symphony_subnet_id : local.output.symphony_subnet_id
+    symphony_subnet_id = var.symphony_subnet_id != "" ? var.symphony_subnet_id : try(local.output.symphony_subnet_id, "")
     symphony_worker_security_group = length(var.security_groups) > 0 ? flatten([for sg_name in var.security_groups : [for sg in module.security_groups.security_groups : sg.id if sg.name == sg_name]]) : try(jsondecode(local.output.symphony_worker_security_group), [])
 
     symphony_instance_profile = var.symphony_instance_profile != "" ? var.symphony_instance_profile : local.symphony_compute_instance_profile
@@ -177,6 +185,18 @@ locals {
 
     skip_symphony_config = var.skip_symphony_config
    
+}
+
+data "ibm_is_vpc" "workload_vpc" {
+    count = local.workload_vpc_name != "" ? 1 : 0
+    provider = ibm.builder
+    name = local.workload_vpc_name
+}
+
+data "ibm_resource_group" "worker_resource_group" {
+    count = local.resource_group_name != "" ? 1 : 0
+    provider = ibm.builder
+    name = local.resource_group_name
 }
 
 // Get all resource groups from the region
