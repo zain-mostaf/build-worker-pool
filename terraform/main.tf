@@ -118,7 +118,7 @@ locals {
         local.output.private_dns_zone_id,
         try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "private_dns_zone_id"][0], "")
     )
-    private_dns_reverse_zone_id = var.private_dns_reverse_zone_id != "" ? var.private_dns_reverse_zone_id : try(
+    private_dns_reverse_zone_id = try(
         local.output.private_dns_reverse_zone_id,
         try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "private_dns_reverse_zone_id"][0], "")
     )
@@ -126,19 +126,19 @@ locals {
 
     vni_enabled = try(tobool(local.output.vni_enabled), try(
         tobool([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_enabled"][0]),
-        var.vni_enabled
+        true
     ))
     vni_name = try(
         local.output.vni_name,
-        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_name"][0], var.vni_name)
+        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_name"][0], "eth1")
     )
     vni_subnet_id_or_name = try(
         local.output.vni_subnet_id_or_name,
-        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_subnet_id_or_name"][0], var.vni_subnet_id_or_name)
+        try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_subnet_id_or_name"][0], "")
     )
     vni_security_group_ids = try(
         jsondecode(local.output.vni_security_group_ids),
-        try(jsondecode([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_security_group_ids"][0]), var.vni_security_group_ids)
+        try(jsondecode([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "vni_security_group_ids"][0]), [])
     )
 
     /*

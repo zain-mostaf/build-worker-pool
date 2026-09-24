@@ -135,33 +135,3 @@ variable skip_symphony_config {
     default = false
     description = "(Optional) Set true to skip Symphony config during cloud-init execution. This is useful when you have to detach the infrastructure hand-off from Symphony setup (requirement for production workloads that require Symphony config to be done during weekends). It is currently applicable for Windows worker pools only."
 }
-
-variable vni_enabled {
-    type = bool
-    default = true
-    description = "Create an additional VNI on each VSI. The selected instance profile must support at least two network interfaces."
-}
-
-variable vni_name {
-    type = string
-    default = "eth1"
-    description = "Name of the additional VNI attached to each VSI."
-}
-
-variable vni_subnet_id_or_name {
-    type = string
-    default = ""
-    description = "Optional subnet ID or name for the additional VNI. If omitted, the VSI subnet is used."
-}
-
-variable vni_security_group_ids {
-    type = list(string)
-    default = []
-    description = "Optional security groups for the additional VNI. If omitted, the VSI security groups are used."
-}
-
-variable private_dns_reverse_zone_id {
-    type = string
-    default = ""
-    description = "Optional IBM Cloud DNS reverse zone ID for PTR records. If omitted, the value from the management workspace is used, then the forward zone is reused for backward compatibility."
-}
