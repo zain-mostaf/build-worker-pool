@@ -61,17 +61,36 @@ resource "ibm_is_instance" "worker" {
   metadata_service {
     enabled = true
   }
-  primary_network_interface {
-    name                 = "eth0"
-    subnet               = var.vni_enabled ? try(data.ibm_is_subnet.primary_vni_subnet_by_name[0].id, local.primary_subnet_id_or_name) : try(data.ibm_is_subnet.subnet_by_name[0].id, local.primary_subnet_id_or_name)
-    security_groups      = local.primary_security_group_ids
-    
-    primary_ip{
-      address = each.key
-      auto_delete = true
-      name = "${each.value}-eth0"
+  dynamic "primary_network_attachment" {
+    for_each = var.vni_enabled ? [1] : []
+    content {
+      name = var.vni_name
+      virtual_network_interface {
+        name            = "${each.value}-eth0"
+        subnet          = try(data.ibm_is_subnet.primary_vni_subnet_by_name[0].id, local.primary_subnet_id_or_name)
+        security_groups = local.primary_security_group_ids
+        auto_delete     = true
+        primary_ip {
+          address     = each.key
+          auto_delete = true
+          name        = "${each.value}-eth0"
+        }
+      }
     }
+  }
 
+  dynamic "primary_network_interface" {
+    for_each = var.vni_enabled ? [] : [1]
+    content {
+      name            = "eth0"
+      subnet          = try(data.ibm_is_subnet.subnet_by_name[0].id, local.subnet_id_or_name)
+      security_groups = local.security_groups
+      primary_ip {
+        address     = each.key
+        auto_delete = true
+        name        = "${each.value}-eth0"
+      }
+    }
   }
 
   lifecycle {
