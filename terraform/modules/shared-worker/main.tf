@@ -26,6 +26,8 @@ locals {
     boot_volume_size = 100
     vni_subnet_id_or_name = var.vni_subnet_id_or_name != "" ? var.vni_subnet_id_or_name : var.subnet_id_or_name
     vni_security_group_ids = length(var.vni_security_group_ids) > 0 ? var.vni_security_group_ids : local.security_groups
+    primary_subnet_id_or_name = var.vni_enabled ? local.vni_subnet_id_or_name : local.subnet_id_or_name
+    primary_security_group_ids = var.vni_enabled ? local.vni_security_group_ids : local.security_groups
 }
 
 data ibm_is_subnet subnet_by_name {
@@ -33,9 +35,9 @@ data ibm_is_subnet subnet_by_name {
     name = local.subnet_id_or_name
 }
 
-data ibm_is_subnet vni_subnet_by_name {
-  count = var.vni_enabled && length(regexall("\\w{4}-\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}", local.vni_subnet_id_or_name)) == 0 ? 1 : 0
-  name = local.vni_subnet_id_or_name
+data ibm_is_subnet primary_vni_subnet_by_name {
+  count = var.vni_enabled && length(regexall("\\w{4}-\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}", local.primary_subnet_id_or_name)) == 0 ? 1 : 0
+  name = local.primary_subnet_id_or_name
 }
 
 data ibm_is_image image_by_name {
@@ -61,8 +63,8 @@ resource "ibm_is_instance" "worker" {
   }
   primary_network_interface {
     name                 = "eth0"
-    subnet               = try(data.ibm_is_subnet.subnet_by_name[0].id, local.subnet_id_or_name)
-    security_groups      = local.security_groups
+    subnet               = var.vni_enabled ? try(data.ibm_is_subnet.primary_vni_subnet_by_name[0].id, local.primary_subnet_id_or_name) : try(data.ibm_is_subnet.subnet_by_name[0].id, local.primary_subnet_id_or_name)
+    security_groups      = local.primary_security_group_ids
     
     primary_ip{
       address = each.key
@@ -72,15 +74,6 @@ resource "ibm_is_instance" "worker" {
 
   }
 
-  dynamic "network_interfaces" {
-    for_each = var.vni_enabled ? [1] : []
-    content {
-      name            = var.vni_name
-      subnet          = try(data.ibm_is_subnet.vni_subnet_by_name[0].id, local.vni_subnet_id_or_name)
-      security_groups = local.vni_security_group_ids
-    }
-  }
-  
   lifecycle {
       ignore_changes = [ user_data, tags, image ]
   }

@@ -57,23 +57,23 @@ variable vpc_id {
 variable vni_enabled {
     type = bool
     default = true
-    description = "Create an additional VNI on each VSI. The selected instance profile must support at least two network interfaces."
+    description = "Use the VNI subnet and security groups for the VSI primary network interface."
 }
 
 variable vni_name {
     type = string
     default = "eth1"
-    description = "Name of the additional VNI attached to each VSI."
+    description = "Legacy input retained for workspace compatibility; the VNI is now the primary interface (eth0)."
 }
 
 variable vni_subnet_id_or_name {
     type = string
     default = ""
-    description = "Optional subnet ID or name for the additional VNI. If omitted, the VSI subnet is used."
+    description = "Optional subnet ID or name for the primary VNI interface. If omitted, the VSI subnet is used."
 }
 
 variable vni_security_group_ids {
     type = list(string)
     default = []
-    description = "Optional security groups for the additional VNI. If omitted, the VSI security groups are used."
+    description = "Optional security groups for the primary VNI interface. If omitted, the VSI security groups are used."
 }
