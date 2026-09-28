@@ -45,6 +45,20 @@ data ibm_is_image image_by_name {
     name = local.symphony_image_id
 }
 
+resource "ibm_is_virtual_network_interface" "worker" {
+  for_each = var.vni_enabled ? local.machine_ip_name_mapping : {}
+
+  name            = "${each.value}-eth0"
+  subnet          = try(data.ibm_is_subnet.primary_vni_subnet_by_name[0].id, local.primary_subnet_id_or_name)
+  security_groups = local.primary_security_group_ids
+  resource_group  = local.resource_group_id
+  auto_delete     = true
+
+  primary_ip {
+    address = each.key
+  }
+}
+
 resource "ibm_is_instance" "worker" {
  
   for_each       = local.machine_ip_name_mapping
@@ -66,15 +80,7 @@ resource "ibm_is_instance" "worker" {
     content {
       name = var.vni_name
       virtual_network_interface {
-        name            = "${each.value}-eth0"
-        subnet          = try(data.ibm_is_subnet.primary_vni_subnet_by_name[0].id, local.primary_subnet_id_or_name)
-        security_groups = local.primary_security_group_ids
-        auto_delete     = true
-        primary_ip {
-          address     = each.key
-          auto_delete = true
-          name        = "${each.value}-eth0"
-        }
+        id = ibm_is_virtual_network_interface.worker[each.key].id
       }
     }
   }
