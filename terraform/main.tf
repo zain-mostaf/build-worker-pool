@@ -169,7 +169,6 @@ locals {
     worker_pool_name_prefix = local.worker_pool_prefix!="" ? "${local.worker_pool_prefix}" : ("${local.ad_domain != "" ? "wk" : "worker" }")
     worker_pool_worker_names = [for i in range(local.worker_pool_size) : "${local.cluster_prefix}-${local.worker_pool_name_prefix}-${format("%04d", i + local.worker_pool_start_number_at)}"]
     worker_pool_ip_name_mapping = {for idx in range(min(local.worker_pool_size, length(local.worker_pool_ips))) : local.worker_pool_ips[idx] => local.worker_pool_worker_names[idx]}
-    windows_computer_name_mapping = {for idx in range(min(local.worker_pool_size, length(local.worker_pool_ips))) : local.worker_pool_ips[idx] => "${substr(local.cluster_prefix, 0, min(length(local.cluster_prefix), 6))}-wf-${format("%04d", idx + local.worker_pool_start_number_at)}"}
 
     // Worker pool type
     worker_pool_type = var.worker_pool_type
@@ -255,7 +254,6 @@ module shared_workers {
     source = "./modules/shared-worker"
     count = local.worker_pool_type == "shared" ? 1 : 0
     machine_ip_name_mapping = local.worker_pool_ip_name_mapping
-    windows_computer_name_mapping = local.windows_computer_name_mapping
     symphony_image_name = local.symphony_instance_image_id
     symphony_profile = local.symphony_instance_profile
     worker_tags = local.tags

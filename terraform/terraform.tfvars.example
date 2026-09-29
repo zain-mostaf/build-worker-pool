@@ -25,7 +25,8 @@ ad_domain_name                   = "wf.ibmcloud"
 skip_symphony_config = false
 
 # AD join user/password can come from the parent workspace, or be overridden here.
-# ad_join_user     = "<DOMAIN\\join-user>"
+# Example domain-qualified join account; change to the account permitted to join computers.
+ad_join_user     = "wf.ibmcloud\\administrator"
 # ad_join_password = "<AD join password>"
 
 # Configure AD DNS to resolve the AD domain and to forward the us-east-1.wf.ibmcloud

@@ -109,9 +109,6 @@ Function Join-Ad-Domain {
             [string]$JoinUserPassword # Password of the join user
        )
 
-    if ($ComputerName.Length -gt 15) {
-        throw "ComputerName '$ComputerName' exceeds Windows' 15-character NetBIOS limit. Use a shorter worker name before joining AD."
-    }
     if ([string]::IsNullOrWhiteSpace($JoinUser) -or [string]::IsNullOrWhiteSpace($JoinUserPassword)) {
         throw "AD join requires both JoinUser and JoinUserPassword."
     }
@@ -211,9 +208,6 @@ Function Deploy-Worker {
     netsh -f c:\symphony-deployment-scripts\netsh.txt
 
     $HostName = hostname
-    if ($ComputerName.Length -gt 15) {
-        throw "ComputerName '$ComputerName' exceeds Windows' 15-character NetBIOS limit. Shorten the generated VSI name."
-    }
     $HostnameNeedsRename = $HostName -ne $ComputerName
     if ($HostnameNeedsRename) {
         Write-Log -Level Info "(Deploy-Worker) Hostname is $HostName; it will be changed to match the VSI name $ComputerName"
