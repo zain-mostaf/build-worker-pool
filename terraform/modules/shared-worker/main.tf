@@ -52,10 +52,10 @@ resource "ibm_is_virtual_network_interface" "worker" {
   subnet          = try(data.ibm_is_subnet.primary_vni_subnet_by_name[0].id, local.primary_subnet_id_or_name)
   security_groups = local.primary_security_group_ids
   resource_group  = local.resource_group_id
-  auto_delete     = true
 
   primary_ip {
     address = each.key
+    auto_delete = true
   }
 }
 
