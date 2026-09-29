@@ -230,6 +230,7 @@ module cloud_init_scripts {
     worker_os=local.worker_os
     cluster_domain=try(module.dns_records[0].domain_name, local.ad_domain)
     ego_cluster_info=local.symphony_cluster_info
+    ego_base_port_override=var.symphony_base_port
     ego_config_override=""
     post_deployment_tasks=local.post_deployment_tasks
     additional_resource_tag=""

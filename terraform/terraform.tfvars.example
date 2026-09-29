@@ -14,6 +14,7 @@ worker_pool_start_at_number      = 1
 worker_private_dns_zone_id       = "<ID of us-east-1.wf.ibmcloud private DNS zone>"
 ad_dns_server_ip                 = "<private IPv4 address for wdccom-ad-01.common.wf.ibmcloud>"
 ad_domain_name                   = "wf.ibmcloud"
+symphony_base_port               = 17869
 
 # Optional: use the parent workspace defaults unless you need overrides.
 # worker_pool_subnet_start_host = 64

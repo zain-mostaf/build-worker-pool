@@ -13,7 +13,7 @@
 locals {
 
    // EGO local properties for Jinja templating
-   ego_base_port =  try(split("= ", regex("(?:ego_base_port = )\\d{1,}", var.ego_cluster_info))[1], 7869)
+   ego_base_port = var.ego_base_port_override > 0 ? var.ego_base_port_override : try(split("= ", regex("(?:ego_base_port = )\\d{1,}", var.ego_cluster_info))[1], 7869)
    ego_ssl_setup =  try(split("= ", regex("(?:ego_ssl_setup = )\\w{1,}", var.ego_cluster_info))[1], false)
    ego_ssl_port =   try(split("= ", regex("(?:ego_ssl_port = )\\d{1,}", var.ego_cluster_info))[1], 0)
    ego_ssl_cacert = var.ego_ssl_cacert
@@ -123,4 +123,3 @@ locals {
 
     cloud_init_output = var.worker_os == "linux" ? local.cloud_init_linux : local.cloud_init_windows
 }
-

@@ -36,6 +36,12 @@ variable ad_domain_name {
     description = "Optional AD domain name. The parent workspace value is used when omitted."
 }
 
+variable symphony_base_port {
+    type = number
+    default = 0
+    description = "Optional Symphony EGO base port override. Zero uses the value from the HPC Management workspace."
+}
+
 variable worker_pool_subnet_segmentation {
     type=list(string)
     description = "List of CIDRs to be used for worker IP assignment. It will limit the number of available spots for this worker pool."

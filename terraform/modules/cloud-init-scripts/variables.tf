@@ -22,6 +22,11 @@ variable ego_cluster_info {
 
 }
 
+variable ego_base_port_override {
+   type = number
+   default = 0
+}
+
 variable ego_config_override {
    default = ""
 }
@@ -57,4 +62,3 @@ variable skip_symphony_config {
    type = bool
    default = false
 }
-
