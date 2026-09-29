@@ -101,18 +101,27 @@ Function Join-Ad-Domain {
             [string]$ADDNSServer, # IP Address of DNS Server.
         [Parameter(Mandatory = $true)]
             [string]$DomainName, # Domain name to join
+        [Parameter(Mandatory = $true)]
+            [string]$ComputerName, # Worker computer name to register in AD
         [Parameter(Mandatory = $false)]
             [string]$JoinUser,  # Domain user to join machines into a domain
         [Parameter(Mandatory = $false)]
             [string]$JoinUserPassword # Password of the join user
        )
+
+    if ($ComputerName.Length -gt 15) {
+        throw "ComputerName '$ComputerName' exceeds Windows' 15-character NetBIOS limit. Use a shorter worker name before joining AD."
+    }
+    if ([string]::IsNullOrWhiteSpace($JoinUser) -or [string]::IsNullOrWhiteSpace($JoinUserPassword)) {
+        throw "AD join requires both JoinUser and JoinUserPassword."
+    }
    
     ### Set DNS Client for alternative aliases
     Set-DnsClientServerAddress -InterfaceAlias "Ethernet*" -ServerAddresses ($ADDNSServer)
 
     $password = ConvertTo-SecureString $JoinUserPassword -AsPlainText -Force
     $Cred = New-Object System.Management.Automation.PSCredential ($JoinUser, $password)
-    Add-Computer -DomainName $DomainName -Credential $Cred -Force
+    Add-Computer -DomainName $DomainName -Credential $Cred -NewName $ComputerName -Force -ErrorAction Stop
 
 }
 
@@ -202,33 +211,60 @@ Function Deploy-Worker {
     netsh -f c:\symphony-deployment-scripts\netsh.txt
 
     $HostName = hostname
-    if ($HostName -ne $ComputerName) {
-        Write-Log -Level Warn "(Deploy-Worker) Automatic computer rename is disabled. Current name is $HostName; configured name is $ComputerName"
+    if ($ComputerName.Length -gt 15) {
+        throw "ComputerName '$ComputerName' exceeds Windows' 15-character NetBIOS limit. Shorten the generated VSI name."
+    }
+    $HostnameNeedsRename = $HostName -ne $ComputerName
+    if ($HostnameNeedsRename) {
+        Write-Log -Level Info "(Deploy-Worker) Hostname is $HostName; it will be changed to match the VSI name $ComputerName"
     } else {
         Write-Log -Level Info "(Deploy-Worker) Computer name is $ComputerName"
     }
 
-    if ($ADDNSServer -ne "") {
+    $RestartRequired = $false
+    $AdJoinRequested = -not [string]::IsNullOrWhiteSpace($ADDNSServer) -or -not [string]::IsNullOrWhiteSpace($DomainName)
+    if ($AdJoinRequested) {
+        if ([string]::IsNullOrWhiteSpace($ADDNSServer) -or
+            [string]::IsNullOrWhiteSpace($DomainName) -or
+            [string]::IsNullOrWhiteSpace($JoinUser) -or
+            [string]::IsNullOrWhiteSpace($DecodedJoinUserPass)) {
+            throw "AD join configuration is incomplete. Provide AD DNS server, domain, join user, and join password together."
+        }
+
         Write-Log -Level Info "(Deploy-Worker) Checking if this machine is part of domain"
         $partOfDomain=(Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain
 
         if ($partOfDomain -eq $false) {
-            Join-Ad-Domain -ADDNSServer $ADDNSServer -DomainName $DomainName -JoinUser $JoinUser -JoinUserPassword $DecodedJoinUserPass
-            Write-Log -Level Info "(Deploy-Worker) Machine added to domain $DomainName, restart and execute the script again (exit 1003)"
-            exit 1003
+            Join-Ad-Domain -ADDNSServer $ADDNSServer -DomainName $DomainName -ComputerName $ComputerName -JoinUser $JoinUser -JoinUserPassword $DecodedJoinUserPass
+            $RestartRequired = $true
+            Write-Log -Level Info "(Deploy-Worker) Machine joined domain $DomainName. Deployment will finish before the required restart."
         } else {
             Write-Log -Level Info "(Deploy-Worker) Machine is part of domain $DomainName"
+            if ($HostnameNeedsRename) {
+                $JoinPassword = ConvertTo-SecureString $DecodedJoinUserPass -AsPlainText -Force
+                $JoinCredential = New-Object System.Management.Automation.PSCredential ($JoinUser, $JoinPassword)
+                Rename-Computer -NewName $ComputerName -DomainCredential $JoinCredential -Force -ErrorAction Stop
+                $RestartRequired = $true
+            }
         }
+    } elseif ($HostnameNeedsRename) {
+        Rename-Computer -NewName $ComputerName -Force -ErrorAction Stop
+        $RestartRequired = $true
     }
     Write-Log -Level Info "(Deploy-Worker) Adding DNS search suffix to $DNSSuffix"
     Set-DnsClientGlobalSetting -SuffixSearchList @($DNSSuffix)
 
         ### Symphony setup will be skipped if flag is true
-    if ($NoStartSymphonyConfig -eq $true) {
+        if ($NoStartSymphonyConfig -eq $true) {
             # Ensure LIM service is stopped
             Write-Log -Level Info "(Deploy-Worker) NoStartSymphonyConfig is true, skipping Symphony config."
             Stop-Service LIM
-            exit 0
+            if ($RestartRequired) {
+                Write-Log -Level Info "(Deploy-Worker) Restarting once to apply the hostname change and/or complete the Active Directory join"
+                Restart-Computer -Force
+            } else {
+                exit 0
+            }
     }
 
         #EditMasterList-EgoConfigFile -MasterList $MasterList -ContentToReplace $ContentToReplace
@@ -255,6 +291,10 @@ Function Deploy-Worker {
         Write-Log -Level Info "(Deploy-Worker) *** WORKER DEPLOYED! ***"
         . c:\symphony-deployment-scripts\windows-worker-postdeployment.ps1                                                              
         PostDeploymentTasks
-        exit 0
-    }
+        if ($RestartRequired) {
+            Write-Log -Level Info "(Deploy-Worker) Restarting once to apply the hostname change and/or complete the Active Directory join"
+            Restart-Computer -Force
+        } else {
+            exit 0
+        }
 }

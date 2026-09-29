@@ -1,0 +1,33 @@
+# Copy to terraform.tfvars and replace the placeholders before running Terraform.
+# Keep this file out of version control if it contains credentials.
+
+ibmcloud_api_key         = "<IBM Cloud API key>"
+schematics_workspace_id  = "<HPC management Schematics workspace ID>"
+
+# Worker network and sizing
+worker_pool_subnet_segmentation = ["10.0.0.0/24"] # Replace with an available worker subnet CIDR
+worker_pool_size                 = 1
+worker_pool_os                   = "windows"
+worker_pool_type                 = "shared"
+worker_pool_prefix               = "wk" # Keep generated Windows computer names within 15 characters
+worker_pool_start_at_number      = 1
+
+# Optional: use the parent workspace defaults unless you need overrides.
+# worker_pool_subnet_start_host = 64
+# symphony_subnet_id             = ""
+# symphony_instance_profile      = ""
+# symphony_instance_image_id     = ""
+
+# Windows worker options
+skip_symphony_config = false
+
+# AD domain, AD DNS server, and AD user are read from the referenced HPC
+# Management Schematics workspace. Set ad_join_user and ad_join_password here
+# only if you need to override the parent workspace values.
+# ad_join_user     = "<DOMAIN\\join-user>"
+# ad_join_password = "<AD join password>"
+
+# IBM Cloud DNS resolution for AD-joined workers:
+# Configure the AD DNS server to forward non-AD queries to IBM Cloud DNS.
+# Do not set IBM Cloud DNS as ad_dns_ips unless it can answer AD SRV records
+# and service the domain join requests for your AD domain.

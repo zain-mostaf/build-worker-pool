@@ -102,8 +102,8 @@ locals {
      symphony_linux_image_name = try(try(local.output.symphony_image_name, [for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "symphony_image_name" ][0]), "")
      symphony_windows_image_name = try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "windows_image_name" ][0], "")
 
-    // Computed grid-manager-prefix name (used to configure ego.conf on workers) - according to Citi conventions
-    symphony_master_names = [for i in range(2) : "${local.cluster_prefix}-${local.ad_domain != "" ? "gm" : "grid-man" }-${format("%02d", i+1)}"]
+    // Computed Symphony manager names used to configure ego.conf and Windows worker deployment.
+    symphony_master_names = [for i in range(2) : "${local.cluster_prefix}-wf-${local.ad_domain != "" ? "gm" : "grid-man" }-${format("%02d", i+1)}"]
 
     /*
     *  Output variables coming from HPC Management Schematics workspace (requires commit 7f45c3fa7c0d85e3bb02ccb2afeb8b5fd178046b in citi-hpc-offering to work)
