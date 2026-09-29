@@ -203,34 +203,33 @@ Function Deploy-Worker {
 
     $HostName = hostname
     if ($HostName -ne $ComputerName) {
-        Rename-Computer -NewName $ComputerName
-        Write-Log -Level Info "(Deploy-Worker) Modified the computer name, restart and execute the script again (exit 1003)"
-        exit 1003
+        Write-Log -Level Warn "(Deploy-Worker) Automatic computer rename is disabled. Current name is $HostName; configured name is $ComputerName"
     } else {
-        Write-Log -Level Info "(Deploy-Worker) Computer Name is $ComputerName, executing the remaining logic after the reboot"
+        Write-Log -Level Info "(Deploy-Worker) Computer name is $ComputerName"
+    }
 
-        if ($ADDNSServer -ne "") {
-            Write-Log -Level Info "(Deploy-Worker) Checking if this machine is part of domain"
-            $partOfDomain=(Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain
+    if ($ADDNSServer -ne "") {
+        Write-Log -Level Info "(Deploy-Worker) Checking if this machine is part of domain"
+        $partOfDomain=(Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain
 
-            if ($partOfDomain -eq $false) {
-                Join-Ad-Domain -ADDNSServer $ADDNSServer -DomainName $DomainName -JoinUser $JoinUser -JoinUserPassword $DecodedJoinUserPass
-                Write-Log -Level Info "(Deploy-Worker) Machine added to domain $DomainName, restart and execute the script again (exit 1003)"
-                exit 1003
-            } else {
-                Write-Log -Level Info "(Deploy-Worker) Machine is part of domain $DomainName"
-            }
+        if ($partOfDomain -eq $false) {
+            Join-Ad-Domain -ADDNSServer $ADDNSServer -DomainName $DomainName -JoinUser $JoinUser -JoinUserPassword $DecodedJoinUserPass
+            Write-Log -Level Info "(Deploy-Worker) Machine added to domain $DomainName, restart and execute the script again (exit 1003)"
+            exit 1003
+        } else {
+            Write-Log -Level Info "(Deploy-Worker) Machine is part of domain $DomainName"
         }
-        Write-Log -Level Info "(Deploy-Worker) Adding DNS search suffix to $DNSSuffix"
-        Set-DnsClientGlobalSetting -SuffixSearchList @($DNSSuffix)
+    }
+    Write-Log -Level Info "(Deploy-Worker) Adding DNS search suffix to $DNSSuffix"
+    Set-DnsClientGlobalSetting -SuffixSearchList @($DNSSuffix)
 
         ### Symphony setup will be skipped if flag is true
-        if ($NoStartSymphonyConfig -eq $true) {
+    if ($NoStartSymphonyConfig -eq $true) {
             # Ensure LIM service is stopped
             Write-Log -Level Info "(Deploy-Worker) NoStartSymphonyConfig is true, skipping Symphony config."
             Stop-Service LIM
             exit 0
-        }
+    }
 
         #EditMasterList-EgoConfigFile -MasterList $MasterList -ContentToReplace $ContentToReplace
         #Enable-Compute-SSL -SSLPort $SSLPort -ManagerServer $ScaleManagerServer -ClusterID $ClusterID
@@ -259,5 +258,3 @@ Function Deploy-Worker {
         exit 0
     }
 }
-
-
