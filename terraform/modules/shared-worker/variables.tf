@@ -14,6 +14,12 @@ variable machine_ip_name_mapping {
     type=map(string)
 }
 
+variable windows_computer_name_mapping {
+    type = map(string)
+    default = {}
+    description = "Optional mapping of worker IPs to Windows NetBIOS names (15 characters maximum)."
+}
+
 variable symphony_image_name {
 
 }

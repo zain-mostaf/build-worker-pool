@@ -81,8 +81,8 @@ locals {
         ),
     "")
 
-    ad_dns_ips = try(try(local.output.ad_dns_ips, [for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "ad_dns_ips" ][0]), "")
-    ad_domain = try(try(local.output.ad_domain, [for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "ad_domain" ][0]), "")
+    ad_dns_ips = var.ad_dns_server_ip != "" ? var.ad_dns_server_ip : try(try(local.output.ad_dns_ips, [for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "ad_dns_ips" ][0]), "")
+    ad_domain = var.ad_domain_name != "" ? var.ad_domain_name : try(try(local.output.ad_domain, [for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "ad_domain" ][0]), "")
     ad_user = var.ad_join_user != "" ? var.ad_join_user : try(
     try (local.output.ad_user,
         try(
@@ -103,7 +103,7 @@ locals {
      symphony_windows_image_name = try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "windows_image_name" ][0], "")
 
     // Computed Symphony manager names used to configure ego.conf and Windows worker deployment.
-    symphony_master_names = [for i in range(2) : "${local.cluster_prefix}-wf-${local.ad_domain != "" ? "gm" : "grid-man" }-${format("%02d", i+1)}"]
+    symphony_master_names = [for i in range(2) : "${local.cluster_prefix}-wf-grid-man-${format("%02d", i+1)}"]
 
     /*
     *  Output variables coming from HPC Management Schematics workspace (requires commit 7f45c3fa7c0d85e3bb02ccb2afeb8b5fd178046b in citi-hpc-offering to work)
@@ -122,7 +122,7 @@ locals {
         local.output.private_dns_instance_id,
         try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "private_dns_instance_id"][0], "")
     )
-    private_dns_zone_id = try(
+    private_dns_zone_id = var.worker_private_dns_zone_id != "" ? var.worker_private_dns_zone_id : try(
         local.output.private_dns_zone_id,
         try([for input in data.ibm_schematics_workspace.schematics_workspace.template_inputs : input.value if input.name == "private_dns_zone_id"][0], "")
     )
@@ -169,6 +169,7 @@ locals {
     worker_pool_name_prefix = local.worker_pool_prefix!="" ? "${local.worker_pool_prefix}" : ("${local.ad_domain != "" ? "wk" : "worker" }")
     worker_pool_worker_names = [for i in range(local.worker_pool_size) : "${local.cluster_prefix}-${local.worker_pool_name_prefix}-${format("%04d", i + local.worker_pool_start_number_at)}"]
     worker_pool_ip_name_mapping = {for idx in range(min(local.worker_pool_size, length(local.worker_pool_ips))) : local.worker_pool_ips[idx] => local.worker_pool_worker_names[idx]}
+    windows_computer_name_mapping = {for idx in range(min(local.worker_pool_size, length(local.worker_pool_ips))) : local.worker_pool_ips[idx] => "${substr(local.cluster_prefix, 0, min(length(local.cluster_prefix), 6))}-wf-${format("%04d", idx + local.worker_pool_start_number_at)}"}
 
     // Worker pool type
     worker_pool_type = var.worker_pool_type
@@ -254,6 +255,7 @@ module shared_workers {
     source = "./modules/shared-worker"
     count = local.worker_pool_type == "shared" ? 1 : 0
     machine_ip_name_mapping = local.worker_pool_ip_name_mapping
+    windows_computer_name_mapping = local.windows_computer_name_mapping
     symphony_image_name = local.symphony_instance_image_id
     symphony_profile = local.symphony_instance_profile
     worker_tags = local.tags

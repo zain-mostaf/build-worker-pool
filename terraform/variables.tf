@@ -18,6 +18,24 @@ variable schematics_workspace_id {
     description = "ID of the HPC Management Schematics workspace. It is used to retrieve common information about the cluster (ex: VPC ID, DNS instance, etc)"
 }
 
+variable worker_private_dns_zone_id {
+    type = string
+    default = ""
+    description = "Optional IBM Cloud DNS zone ID for worker records. Set this to the us-east-1.wf.ibmcloud zone; the parent workspace zone is used when omitted."
+}
+
+variable ad_dns_server_ip {
+    type = string
+    default = ""
+    description = "Optional private IPv4 address of the AD DNS server. The AD FQDN is not accepted here; the workspace value is used when omitted."
+}
+
+variable ad_domain_name {
+    type = string
+    default = ""
+    description = "Optional AD domain name. The parent workspace value is used when omitted."
+}
+
 variable worker_pool_subnet_segmentation {
     type=list(string)
     description = "List of CIDRs to be used for worker IP assignment. It will limit the number of available spots for this worker pool."
